@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>동물 분류 CBT</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
+header{background:#18243a;color:#fff;padding:18px 16px;position:sticky;top:0;z-index:5}header b{font-size:20px}
+main{max-width:760px;margin:auto;padding:18px 14px 50px}.card{background:white;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 2px 12px #17203312}
+h1{font-size:25px;margin:8px 0}h2{font-size:19px;margin:4px 0 14px}
+label{font-size:13px;font-weight:700;color:#596579;display:block;margin:13px 0 6px}
+select,input,button{width:100%;min-height:46px;border:1px solid #d9deea;border-radius:12px;background:white;padding:0 12px;font-size:15px;font-family:inherit}
+button{background:#244a8f;color:white;border:0;font-weight:700;cursor:pointer;margin-top:12px}
+button.secondary{background:#edf1f8;color:#24324a}button.danger{background:#fff0f0;color:#bd3030}button:disabled{background:#ccc;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stats{display:flex;gap:8px}.stat{flex:1;background:#f0f4fa;padding:12px;border-radius:12px;text-align:center}.stat b{font-size:21px;display:block}
+.option{display:block;border:1px solid #dce2ed;padding:15px;border-radius:13px;margin:9px 0;cursor:pointer}.option.selected{border:2px solid #315eb0;background:#f2f6ff}
+.progress{height:7px;background:#e7ebf2;border-radius:9px;overflow:hidden;margin:12px 0}.bar{height:100%;background:#315eb0}
+.meta{color:#68758a;font-size:13px}.answer{padding:12px;border-radius:12px;background:#f5f8fc;margin-top:14px}.correct{color:#18794e}.wrong{color:#bd3030}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 6px;border-bottom:1px solid #edf0f5;text-align:left}th{color:#657188}
+.hidden{display:none}.btn-group{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:15px 0}
+.btn-group button{margin:0;min-height:50px;font-size:16px}.btn-large{grid-column:1/-1;min-height:50px}
+.badge{display:inline-block;background:#315eb0;color:white;padding:2px 8px;border-radius:4px;font-size:12px;margin-left:5px}
+.saved-message{color:#18794e;font-size:13px;padding:8px;background:#f0f8f5;border-radius:8px;margin-top:10px}
+@media(max-width:500px){.btn-group{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.card{padding:15px}}
+</style>
+</head>
+<body>
+<header><b>🐾 동물 분류 CBT</b></header>
+<main>
+
+<!-- 홈 화면 -->
+<section id="home">
+  <div class="card">
+    <h1>생물분류기사(동물) 암기 CBT</h1>
+    <div class="meta">순서대로 동물을 선택하여 풀이하세요</div>
+  </div>
+  
+  <div class="card">
+    <h2>📝 풀이 시작</h2>
+    <div class="btn-group">
+      <button onclick="startSequentialQuiz(10)">10개<br>풀이</button>
+      <button onclick="startSequentialQuiz(30)">30개<br>풀이</button>
+      <button onclick="startSequentialQuiz(50)">50개<br>풀이</button>
+    </div>
+  </div>
+
+  <div class="card" id="savedQuiz" class="hidden">
+    <h2>⏸️ 이어서 풀기</h2>
+    <div id="savedInfo"></div>
+    <div class="grid">
+      <button onclick="resumeQuiz()">이어서 풀기</button>
+      <button class="secondary" onclick="deleteSavedQuiz()">삭제</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 통계</h2>
+    <div class="stats">
+      <div class="stat"><b id="totalSolved">0</b>문제</div>
+      <div class="stat"><b id="totalCorrect">0</b>정답</div>
+      <div class="stat"><b id="accuracy">0</b>%</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📚 최근 풀이 기록</h2>
+    <div id="historyList" style="font-size:13px"></div>
+  </div>
+</section>
+
+<!-- 풀이 화면 -->
+<section id="quiz" class="hidden">
+ <div class="card">
+  <div class="meta" id="quizMeta"></div>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <h2 id="qTitle"></h2>
+  <div id="options"></div>
+  <div id="feedback"></div>
+  <div class="grid">
+    <button class="secondary" onclick="prevQ()" id="prevBtn">이전</button>
+    <button onclick="nextQ()" id="nextBtn">다음</button>
+  </div>
+  <button class="danger" onclick="saveAndExit()" style="margin-top:10px">저장하고 나가기</button>
+ </div>
+</section>
+
+<!-- 결과 화면 -->
+<section id="result" class="hidden">
+ <div class="card">
+  <h1>시험 결과</h1>
+  <div class="stats">
+    <div class="stat"><b id="score">0</b>점</div>
+    <div class="stat"><b id="right">0</b>정답</div>
+    <div class="stat"><b id="wrong">0</b>오답</div>
+  </div>
+  <button onclick="reviewWrong()" id="reviewBtn" class="hidden">❌ 틀린 문제만 다시 풀기</button>
+  <button class="secondary" onclick="goHome()">처음으로</button>
+ </div>
+ <div class="card"><h2>문제 결과</h2><div id="resultList"></div></div>
+</section>
+
+</main>
+
+<script>
+let DATA=[], quiz=[], answers=[], current=0, submitted=false;
+let quizMode='new', quizSize=10;
+const $=id=>document.getElementById(id);
+
+// LocalStorage 키
+const STORAGE_KEY='animalCBT_saved';
+const HISTORY_KEY='animalCBT_history';
+
+// 앱 초기화
+fetch("species.json").then(r=>r.json()).then(d=>{DATA=d; init();});
+
+function init(){
+  loadStats();
+  checkSavedQuiz();
+}
+
+// ===== 저장된 통계 로드 =====
+function loadStats(){
+  let history=JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  if(history.length===0){
+    $('totalSolved').textContent='0';
+    $('totalCorrect').textContent='0';
+    $('accuracy').textContent='0';
+    $('historyList').innerHTML='<p style="color:#999">아직 풀이 기록이 없습니다.</p>';
+    return;
+  }
+  
+  let totalSolved=0, totalCorrect=0;
+  history.forEach(h=>{
+    totalSolved+=h.total;
+    totalCorrect+=h.correct;
+  });
+  
+  $('totalSolved').textContent=totalSolved;
+  $('totalCorrect').textContent=totalCorrect;
+  $('accuracy').textContent=totalSolved>0 ? Math.round(totalCorrect/totalSolved*100) : '0';
+  
+  let historyHTML='';
+  history.slice(-5).reverse().forEach(h=>{
+    historyHTML+=`<div style="padding:8px;border-bottom:1px solid #eee"><b>${h.correct}/${h.total}</b> (${Math.round(h.correct/h.total*100)}%) - ${h.date}</div>`;
+  });
+  $('historyList').innerHTML=historyHTML;
+}
+
+// ===== 저장된 풀이 확인 =====
+function checkSavedQuiz(){
+  let saved=JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  if(saved && saved.quiz && saved.quiz.length>0){
+    $('savedQuiz').classList.remove('hidden');
+    $('savedInfo').innerHTML=`<div><b>${saved.current+1} / ${saved.quiz.length}</b> 진행 중<br><span class="meta">${saved.date}</span></div>`;
+  }
+}
+
+// ===== 순서대로 풀이 시작 =====
+function startSequentialQuiz(num){
+  quizSize=num;
+  quizMode='new';
+  quiz=DATA.slice(0,num);
+  answers=Array(quiz.length).fill(null);
+  current=0;
+  submitted=false;
+  $('home').classList.add('hidden');
+  $('result').classList.add('hidden');
+  $('quiz').classList.remove('hidden');
+  showQ();
+}
+
+// ===== 저장된 풀이 이어서 풀기 =====
+function resumeQuiz(){
+  let saved=JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  if(!saved){alert('저장된 풀이가 없습니다.');return}
+  
+  quiz=saved.quiz;
+  answers=saved.answers;
+  current=saved.current;
+  submitted=false;
+  quizMode='resume';
+  
+  $('home').classList.add('hidden');
+  $('result').classList.add('hidden');
+  $('quiz').classList.remove('hidden');
+  showQ();
+}
+
+// ===== 문제 표시 =====
+function makeQuestion(x){
+  const types=['phylum','class','order','family'];
+  const key=types[Math.floor(Math.random()*types.length)];
+  const labels={phylum:'문',class:'강',order:'목',family:'과'};
+  const correct=x[key];
+  let pool=[...new Set(DATA.map(a=>a[key]).filter(Boolean))].filter(v=>v!==correct);
+  let opts=shuffle([correct,...shuffle(pool).slice(0,3)]);
+  return {text:`<b>${x.name}</b>의 ${labels[key]}은(는)?`,opts,correct,type:key};
+}
+
+function showQ(){
+  let x=quiz[current], q=x._q||(x._q=makeQuestion(x));
+  $('quizMeta').textContent=`${current+1} / ${quiz.length} · ${x.name}`;
+  $('qTitle').innerHTML=q.text;
+  $('bar').style.width=((current+1)/quiz.length*100)+'%';
+  $('options').innerHTML=q.opts.map((o,i)=>`<div class="option ${answers[current]===i?'selected':''}" onclick="choose(${i})">${String.fromCharCode(9312+i)}. ${o}</div>`).join('');
+  $('feedback').innerHTML='';
+  $('prevBtn').disabled=current===0;
+  $('nextBtn').textContent=current===quiz.length-1?'제출':'다음';
+  
+  if(submitted && answers[current]!=null) showFeedback();
+  
+  // 자동 저장
+  autoSave();
+}
+
+function choose(i){if(submitted)return;answers[current]=i;showQ()}
+
+function showFeedback(){
+  let x=quiz[current],q=x._q, a=answers[current], ok=q.opts[a]===q.correct;
+  $('feedback').innerHTML=`<div class="answer ${ok?'correct':'wrong'}"><b>${ok?'✓ 정답':'✗ 오답'}</b><br>정답: <b>${q.correct}</b><br><span class="meta">분류: ${x.phylum} → ${x.class} → ${x.order} → ${x.family}</span></div>`;
+}
+
+// ===== 네비게이션 =====
+function nextQ(){
+  if(answers[current]==null){alert('답을 선택해주세요.');return}
+  if(current<quiz.length-1){current++;showQ()}
+  else finish();
+}
+
+function prevQ(){if(current>0){current--;showQ()}}
+
+// ===== 풀이 완료 =====
+function finish(){
+  submitted=true;
+  let r=quiz.filter((x,i)=>answers[i]!=null && x._q.opts[answers[i]]===x._q.correct).length;
+  
+  // 통계 저장
+  saveHistory(r, quiz.length);
+  
+  // 저장된 풀이 삭제
+  localStorage.removeItem(STORAGE_KEY);
+  
+  $('quiz').classList.add('hidden');
+  $('result').classList.remove('hidden');
+  $('score').textContent=Math.round(r/quiz.length*100);
+  $('right').textContent=r;
+  $('wrong').textContent=quiz.length-r;
+  
+  // 틀린 문제가 있으면 버튼 표시
+  let wrongCount=quiz.length-r;
+  if(wrongCount>0){
+    $('reviewBtn').classList.remove('hidden');
+  }else{
+    $('reviewBtn').classList.add('hidden');
+  }
+  
+  $('resultList').innerHTML=quiz.map((x,i)=>{
+    let ok=x._q.opts[answers[i]]===x._q.correct;
+    return `<div class="answer ${ok?'correct':'wrong'}" style="margin-bottom:10px">${i+1}. <b>${x.name}</b> — ${ok?'✓ 정답':'✗ 오답'}<br>정답: <b>${x._q.correct}</b><br><span class="meta">${x.phylum} → ${x.class} → ${x.order} → ${x.family}</span></div>`;
+  }).join('');
+}
+
+// ===== 오답 다시 풀기 =====
+function reviewWrong(){
+  let w=quiz.filter((x,i)=>x._q.opts[answers[i]]!==x._q.correct);
+  if(!w.length){alert('오답이 없습니다.');return}
+  
+  quiz=w;
+  answers=Array(w.length).fill(null);
+  current=0;
+  submitted=false;
+  quizMode='review';
+  
+  $('result').classList.add('hidden');
+  $('quiz').classList.remove('hidden');
+  quiz.forEach(x=>delete x._q);
+  showQ();
+}
+
+// ===== 저장 기능 =====
+function autoSave(){
+  let save={
+    quiz:quiz,
+    answers:answers,
+    current:current,
+    date:new Date().toLocaleString('ko-KR')
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
+}
+
+function saveAndExit(){
+  if(confirm('현재까지의 풀이를 저장하고 나가시겠습니까?')){
+    autoSave();
+    alert('저장되었습니다!');
+    goHome();
+  }
+}
+
+function deleteSavedQuiz(){
+  if(confirm('저장된 풀이를 삭제하시겠습니까?')){
+    localStorage.removeItem(STORAGE_KEY);
+    $('savedQuiz').classList.add('hidden');
+    alert('삭제되었습니다.');
+  }
+}
+
+// ===== 통계 저장 =====
+function saveHistory(correct, total){
+  let history=JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  history.push({
+    correct:correct,
+    total:total,
+    date:new Date().toLocaleDateString('ko-KR')
+  });
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+}
+
+// ===== 홈으로 =====
+function goHome(){
+  $('result').classList.add('hidden');
+  $('quiz').classList.add('hidden');
+  $('home').classList.remove('hidden');
+  loadStats();
+  checkSavedQuiz();
+}
+
+// ===== 유틸 =====
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+</script>
+</body></html>
